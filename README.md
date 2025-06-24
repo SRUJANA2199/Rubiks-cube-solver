@@ -11,3 +11,5 @@ It applies randomly U-face rotations and stores each step, mimicking the way a c
 
 Solving Logic:
 For the solving part, I used a simple method: reverse the scramble moves step-by-step.
+Project hosted in :
+ https://srujana2199.github.io/Rubiks-cube-solver/
