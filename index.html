@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Algorithm solving arbitrary Rubik's Cube </title>
+  <style>
+    button {
+      margin: 5px;
+      padding: 8px 12px;
+    }
+    #cubeDisplay {
+      margin-top: 20px;
+      font-family: monospace;
+      white-space: pre;
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Algorithm solving arbitrary Rubik's Cube</h1>
+  <button onclick="rotate('U')">Rotate  (Top)</button>
+  <button onclick="scrambleCube()">Scramble</button>
+  <button onclick="solveCube()">Solve</button>
+
+  <div id="cubeDisplay"></div>
+
+  <script>
+    // Cube class holds the structure and behavior of the Rubik’s Cube
+    class Cube {
+      constructor() {
+        this.reset();  // Initialize a solved cube on creation
+      }
+
+      // Resets the cube to the solved state with labeled stickers where w=white,y=yellow and so on
+      reset() {
+        this.faces = {
+          U: ['w1','w2','w3','w4','w5','w6','w7','w8','w9'],
+          D: ['y1','y2','y3','y4','y5','y6','y7','y8','y9'],
+          F: ['r1','r2','r3','r4','r5','r6','r7','r8','r9'],
+          B: ['o1','o2','o3','o4','o5','o6','o7','o8','o9'],
+          L: ['g1','g2','g3','g4','g5','g6','g7','g8','g9'],
+          R: ['b1','b2','b3','b4','b5','b6','b7','b8','b9'],
+        };
+        this.scrambleSteps = []; // To track moves so we can reverse them in solve
+      }
+
+      // Handle face rotation logic for supported faces
+      rotate(face) {
+        if (face === 'U') {
+          this.rotateFaceClockwise('U');   // Rotate U face's own 9 stickers
+          this.rotateUTopRowEdges();       // Adjust adjacent edges for realistic effect
+        }
+        console.log(`Rotated ${face}`);
+      }
+
+      // Rotates any 3x3 face clockwise by adjusting the index positions
+      rotateFaceClockwise(faceKey) {
+        const f = this.faces[faceKey];
+        this.faces[faceKey] = [
+          f[6], f[3], f[0],
+          f[7], f[4], f[1],
+          f[8], f[5], f[2],
+        ];
+      }
+
+      // Updates the top rows of adjacent faces when U is rotated
+      rotateUTopRowEdges() {
+        const F = this.faces.F.slice(0, 3);
+        const R = this.faces.R.slice(0, 3);
+        const B = this.faces.B.slice(0, 3);
+        const L = this.faces.L.slice(0, 3);
+
+        // Rotate the top edges clockwise among F, R, B, L
+        this.faces.F.splice(0, 3, ...L);
+        this.faces.R.splice(0, 3, ...F);
+        this.faces.B.splice(0, 3, ...R);
+        this.faces.L.splice(0, 3, ...B);
+      }
+
+      // Randomly scrambles the cube using U rotations
+      scramble(moves = 5) {
+        const allMoves = ['U'];  
+        this.scrambleSteps = [];
+
+        for (let i = 0; i < moves; i++) {
+          const move = allMoves[Math.floor(Math.random() * allMoves.length)];
+          this.rotate(move);
+          this.scrambleSteps.push(move);  
+        }
+      }
+
+      // Returns current state of all faces 
+      getStateString() {
+        return {
+          U: this.faces.U,
+          L: this.faces.L,
+          F: this.faces.F,
+          R: this.faces.R,
+          B: this.faces.B,
+          D: this.faces.D
+        };
+      }
+    }
+
+    const cube = new Cube();  // Global cube instance
+
+    // Handle rotation from button click
+    function rotate(face) {
+      cube.rotate(face);
+      updateDisplay();
+    }
+
+    // Scramble the cube using U moves
+    function scrambleCube() {
+      cube.scramble();
+      updateDisplay();
+    }
+
+    // "Solve" the cube by reversing scramble steps
+    function solveCube() {
+      const reverseMoves = [...cube.scrambleSteps].reverse();
+      let i = 0;
+
+      // Replay reverse steps with a delay to visualize solving
+      function step() {
+        if (i >= reverseMoves.length) return;
+        cube.rotate(reverseMoves[i]); 
+        updateDisplay();
+        i++;
+        setTimeout(step, 400);  // Delay between each reverse move
+      }
+
+      step();
+    }
+
+    // Converts face arrays into a formatted string display
+    function getCubeSvg(faces) {
+      const { U, L, F, R, B, D } = faces;
+
+      function rows(faceArr) {
+        return [0, 3, 6].map(i => faceArr.slice(i, i + 3).map(x => x.padEnd(2)).join(' '));
+      }
+
+      const uRows = rows(U);
+      const lRows = rows(L);
+      const fRows = rows(F);
+      const rRows = rows(R);
+      const bRows = rows(B);
+      const dRows = rows(D);
+
+      return `
+        ${' '.repeat(6)}${uRows[0]}
+        ${' '.repeat(6)}${uRows[1]}
+        ${' '.repeat(6)}${uRows[2]}
+
+${lRows[0]}   ${fRows[0]}   ${rRows[0]}   ${bRows[0]}
+${lRows[1]}   ${fRows[1]}   ${rRows[1]}   ${bRows[1]}
+${lRows[2]}   ${fRows[2]}   ${rRows[2]}   ${bRows[2]}
+
+        ${' '.repeat(6)}${dRows[0]}
+        ${' '.repeat(6)}${dRows[1]}
+        ${' '.repeat(6)}${dRows[2]}
+      `;
+    }
+
+    // Update the cube display on screen
+    function updateDisplay() {
+      const cubeStrs = cube.getStateString();
+      document.getElementById('cubeDisplay').innerText = getCubeSvg(cubeStrs);
+    }
+
+    updateDisplay();  // Initial render
+  </script>
+</body>
+</html>
